@@ -19,7 +19,7 @@ FREQUENCY = False # False (infinity), 1 to 100000000
 
 # Training config
 learning_rate = 1e-3 # or 0.001
-goal_steps = 1000
+goal_steps = 1000000
 
 #* Generate random games
 def generate_population(num_games=1000,score_requirement=0,save=True, watch=False, human=False, model_path=None):
@@ -38,15 +38,14 @@ def generate_population(num_games=1000,score_requirement=0,save=True, watch=Fals
 
     print("[*] Generate Initial Population started.")
     for eps in range(num_games):
-
-
         # Reset all parameters
         env.reset()
         game_memory = []
         score = 0
         prev_observation = []
         choices = []
-        facing = 0 #TODO: start with UP for now
+        #facing = 0 #TODO: start with UP for now
+
         for _ in range(goal_steps):
             #? debug
             #input()
@@ -57,30 +56,20 @@ def generate_population(num_games=1000,score_requirement=0,save=True, watch=Fals
             #* Using a real human player to train the inital data
             if human:
                 env.render()
+                action = -1
 
-                if keyboard.is_pressed('up'):
-                    action = 0
-                elif keyboard.is_pressed('right'):
-                    action = 1
-                elif keyboard.is_pressed('down'):
-                    action = 2
-                elif keyboard.is_pressed('left'):
-                    action = 3
-                else:
-                    action = facing
+                while action < 0:
+                    time.sleep(0.1)
 
-                time.sleep(1/10)       
-
-                if keyboard.is_pressed('up'):
-                    action = 0
-                elif keyboard.is_pressed('right'):
-                    action = 1
-                elif keyboard.is_pressed('down'):
-                    action = 2
-                elif keyboard.is_pressed('left'):
-                    action = 3
-                else:
-                    action = facing
+                    if keyboard.is_pressed('up'):
+                        action = 0
+                    elif keyboard.is_pressed('right'):
+                        action = 1
+                    elif keyboard.is_pressed('down'):
+                        action = 2
+                    elif keyboard.is_pressed('left'):
+                        action = 3
+                    
             else:
                 action = env.action_space.sample() # 0 to 3; 0 up, 1 right, 2 down, 3 left
 
@@ -88,7 +77,7 @@ def generate_population(num_games=1000,score_requirement=0,save=True, watch=Fals
             if model_path and prev_observation:
                 action = np.argmax(model.predict(np.array(prev_observation).reshape(-1, len(prev_observation), 1))[0])
 
-            facing = action
+            #facing = action
             observation, reward, done, info = env.step(action)
 
             #? debug
@@ -236,7 +225,7 @@ def main():
     
     #! Train with human
     if IS_HUMAN_TRAINING:
-        training_data = generate_population(num_games=1, score_requirement=0, human=True)
+        training_data = generate_population(num_games=3, score_requirement=0, human=True)
 
     #* Generate initial games
     if IS_INITIAL_GENERATE:
@@ -245,20 +234,20 @@ def main():
     
     #* Training historical
     if IS_TRAIN:
-        training_data = np.load("initial_training_1_0.npy", allow_pickle=True)
+        training_data = np.load("model_training_1000_20.npy", allow_pickle=True)
 
-        model = train_model(training_data, num_of_epoch=5)
-        model.save('1_5_epoch.model')
+        model = train_model(training_data, num_of_epoch=10)
+        model.save('gen2_1000_20_epoch_10.model')
         winsound.Beep(1500,250);time.sleep(0.1);winsound.Beep(1500,500)
     
 
     #* Test the game
     if IS_PLAY:
-        model_play_game(model_path='1_5_epoch.model', num_of_games=10, watch=True, frequency=1000000) #frequency=5)
+        model_play_game(model_path='gen2_1000_20_epoch_10.model', num_of_games=20, watch=True, frequency=1000000) #frequency=5)
 
     #* Model to generate more games and training data
     if IS_FURTHER_GENERATE:
-        training_data = generate_population(num_games=1000, score_requirement=50, model_path="1_10_epoch.model")
+        training_data = generate_population(num_games=1000, score_requirement=20, model_path="3_epoch_5.model")
         winsound.Beep(1500,500)
     
 
